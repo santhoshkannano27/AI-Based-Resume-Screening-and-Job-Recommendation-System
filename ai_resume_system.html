@@ -1,0 +1,2321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ResuMatch AI - AI Resume Screening & Job Recommendation System</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulse-slow {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    .animate-pulse-slow {
+      animation: pulse-slow 3s infinite ease-in-out;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.05);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.3);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.5);
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased custom-scrollbar">
+
+  <!-- TOP NAVIGATION HEADER -->
+  <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg no-print">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('screen-tab')">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400">ResuMatch AI</h1>
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v2.5 Pro</span>
+          </div>
+          <p class="text-xs text-slate-400 hidden sm:block">Intelligent Resume Screening & Job Recommendation Engine</p>
+        </div>
+      </div>
+
+      <!-- Quick Preset Candidate Loader -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <div class="hidden md:flex items-center space-x-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-lg text-xs">
+          <span class="text-slate-400">Sample Candidate:</span>
+          <select id="presetCandidateSelect" onchange="loadPresetCandidate(this.value)" class="bg-slate-900 border border-slate-700 rounded text-slate-200 px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-500">
+            <option value="ml_engineer">Alex Rivera (AI/ML Engineer)</option>
+            <option value="fullstack_dev">Sarah Chen (Senior Full Stack)</option>
+            <option value="devops_architect">David Kumar (Cloud & DevOps)</option>
+            <option value="product_mgr">Elena Rostova (Technical PM)</option>
+            <option value="cyber_security">Marcus Vance (Cyber Security)</option>
+            <option value="junior_frontend">Liam Johnson (Junior Frontend)</option>
+          </select>
+        </div>
+
+        <button onclick="runGlobalAnalysis()" class="flex items-center space-x-1.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20 transition duration-150">
+          <svg class="w-4 h-4 animate-spin hidden" id="globalSpinner" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <svg class="w-4 h-4" id="globalScanIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span>Run Screening</span>
+        </button>
+
+        <button onclick="window.print()" class="hidden sm:flex items-center space-x-1 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-lg text-xs font-medium border border-slate-700 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+          </svg>
+          <span>Export Report</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SUB NAVIGATION TABS -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav class="flex space-x-1 sm:space-x-3 overflow-x-auto py-2 custom-scrollbar text-xs font-medium border-t border-slate-800/60">
+        <button onclick="switchTab('screen-tab')" id="tab-btn-screen-tab" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-1.5 transition bg-indigo-600 text-white font-semibold shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+          <span>1. Resume Parser & ATS Audit</span>
+        </button>
+        <button onclick="switchTab('match-tab')" id="tab-btn-match-tab" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+          <span>2. Job Match & Skill Gap</span>
+        </button>
+        <button onclick="switchTab('jobs-tab')" id="tab-btn-jobs-tab" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          <span>3. Job Recommendations</span>
+          <span id="badgeJobCount" class="bg-indigo-500/30 text-indigo-300 text-[10px] px-1.5 py-0.2 rounded-full font-mono font-bold">12</span>
+        </button>
+        <button onclick="switchTab('recruiter-tab')" id="tab-btn-recruiter-tab" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+          <span>4. Recruiter Batch Screener</span>
+        </button>
+        <button onclick="switchTab('interview-tab')" id="tab-btn-interview-tab" class="tab-btn px-3 py-1.5 rounded-lg flex items-center space-x-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+          <span>5. AI Interview Prep</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- ========================================================================= -->
+    <!-- TAB 1: RESUME PARSER & ATS AUDIT SCANNER -->
+    <!-- ========================================================================= -->
+    <section id="screen-tab" class="tab-content block space-y-6">
+      
+      <!-- Top Banner Summary -->
+      <div class="bg-gradient-to-r from-slate-800 via-indigo-950/40 to-slate-800 border border-slate-700/80 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <span class="inline-flex items-center space-x-1 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping mr-1"></span>
+              AI Entity Extraction & ATS Quality Engine
+            </span>
+            <h2 class="text-xl font-bold text-white tracking-tight">Upload Resume & Run Automated Intelligence Audit</h2>
+            <p class="text-xs text-slate-400 max-w-2xl">
+              Extracts entities, skills, education, and career experience using NLP tokenization, then scores your resume against 50+ ATS screening criteria.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-xl text-center">
+              <span class="text-slate-400 block text-[10px]">Extracted Skills</span>
+              <span id="quickSkillCount" class="text-lg font-bold text-indigo-400">18</span>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-xl text-center">
+              <span class="text-slate-400 block text-[10px]">ATS Score</span>
+              <span id="quickAtsScore" class="text-lg font-bold text-emerald-400">88/100</span>
+            </div>
+            <div class="bg-slate-900/80 border border-slate-700 px-4 py-2 rounded-xl text-center">
+              <span class="text-slate-400 block text-[10px]">Experience Level</span>
+              <span id="quickExpLevel" class="text-lg font-bold text-purple-400">Senior (5+ Yrs)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-Column Layout: Input on Left, Extracted Data on Right -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: RESUME INPUT -->
+        <div class="lg:col-span-5 space-y-4">
+          <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                <span>Resume Input</span>
+              </h3>
+              <span class="text-[11px] text-slate-400">PDF, TXT, MD, or Paste</span>
+            </div>
+
+            <!-- Drag & Drop Upload Zone -->
+            <div id="dropZone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" class="border-2 border-dashed border-slate-600 hover:border-indigo-500 rounded-xl p-4 text-center cursor-pointer bg-slate-900/50 hover:bg-slate-900/80 transition group">
+              <input type="file" id="fileInput" accept=".txt,.pdf,.md,.docx,.json" onchange="handleFileSelect(event)" class="hidden" />
+              <div onclick="document.getElementById('fileInput').click()" class="space-y-2">
+                <div class="w-10 h-10 mx-auto rounded-full bg-indigo-500/10 text-indigo-400 flex items-center justify-center group-hover:scale-110 transition">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                </div>
+                <div class="text-xs text-slate-300">
+                  <span class="font-semibold text-indigo-400">Click to upload</span> or drag and drop
+                </div>
+                <p class="text-[10px] text-slate-500">Supports PDF, TXT, Markdown, Plain Text</p>
+              </div>
+            </div>
+
+            <!-- Resume Text Area -->
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between text-xs text-slate-400">
+                <label for="resumeText" class="font-medium text-slate-300">Resume Content (Editable):</label>
+                <button onclick="clearResumeText()" class="text-slate-500 hover:text-red-400 text-[11px] transition">Clear</button>
+              </div>
+              <textarea id="resumeText" rows="14" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono leading-relaxed focus:outline-none focus:border-indigo-500 custom-scrollbar resize-y" placeholder="Paste resume plain text here or choose a sample from above..."></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <span id="charCount" class="text-[10px] text-slate-500">0 characters | 0 words</span>
+              <button onclick="parseAndDisplayResume()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow transition">
+                ⚡ Parse & Scan Resume
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: EXTRACTED ENTITIES & ATS SCORECARD -->
+        <div class="lg:col-span-7 space-y-4">
+          
+          <!-- Candidate Header & Overview Card -->
+          <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-700/60 pb-3">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 id="candName" class="text-lg font-bold text-white">Alex Rivera</h3>
+                  <span id="candRoleBadge" class="text-[11px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">AI & Machine Learning Engineer</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
+                  <span id="candEmail" class="flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <span>alex.rivera@example.com</span>
+                  </span>
+                  <span id="candPhone" class="flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                    <span>+1 (555) 349-8821</span>
+                  </span>
+                  <span id="candLocation" class="flex items-center space-x-1">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                    <span>San Francisco, CA</span>
+                  </span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span id="candExpPill" class="text-xs bg-slate-900 border border-slate-700 px-3 py-1 rounded-lg text-emerald-400 font-semibold font-mono">5.5 Yrs Exp</span>
+              </div>
+            </div>
+
+            <!-- Extracted Skills Matrix -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">Detected Technical & Soft Skills</h4>
+                <span id="skillBadgeCount" class="text-[10px] text-slate-500">18 Extracted</span>
+              </div>
+              <div id="skillsContainer" class="flex flex-wrap gap-1.5">
+                <!-- Injected Skills Badges -->
+              </div>
+            </div>
+
+            <!-- Education & Experience Breakdown -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 space-y-1">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+                  <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"></path></svg>
+                  <span>Education Extracted</span>
+                </span>
+                <p id="candEducation" class="text-xs font-medium text-slate-200">M.S. in Computer Science - Stanford University</p>
+                <p id="candEduDetails" class="text-[11px] text-slate-400">Specialization: Artificial Intelligence & NLP (GPA: 3.9)</p>
+              </div>
+
+              <div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 space-y-1">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+                  <svg class="w-3.5 h-3.5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                  <span>Career Trajectory</span>
+                </span>
+                <p id="candLatestRole" class="text-xs font-medium text-slate-200">Senior AI Engineer @ NeuroTech Labs</p>
+                <p id="candExpSummary" class="text-[11px] text-slate-400">LLM fine-tuning, PyTorch, LangChain, RAG Pipelines</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ATS AUDIT SCANNER & RECOMMENDATIONS -->
+          <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-semibold text-slate-200 flex items-center space-x-2">
+                  <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <span>ATS (Applicant Tracking System) Audit Score</span>
+                </h3>
+                <p class="text-xs text-slate-400">Automated screening metrics & structural optimization analysis</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <div id="atsScoreRadial" class="w-12 h-12 rounded-full border-4 border-emerald-500 flex items-center justify-center text-xs font-bold text-emerald-300 bg-emerald-500/10">
+                  88%
+                </div>
+              </div>
+            </div>
+
+            <!-- Score breakdown bars -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="space-y-1">
+                <div class="flex justify-between text-slate-300">
+                  <span>Quantifiable Impact & Metrics</span>
+                  <span id="metricScoreText" class="font-bold text-indigo-400">92%</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div id="metricScoreBar" class="bg-indigo-500 h-1.5 rounded-full" style="width: 92%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500">Detects percentages (%), metrics, numbers, and KPI outcomes.</p>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-slate-300">
+                  <span>Action Verbs & Power Words</span>
+                  <span id="verbScoreText" class="font-bold text-purple-400">85%</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div id="verbScoreBar" class="bg-purple-500 h-1.5 rounded-full" style="width: 85%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500">Measures high-impact action verbs (spearheaded, deployed, reduced).</p>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-slate-300">
+                  <span>Formatting & Section Completeness</span>
+                  <span id="formatScoreText" class="font-bold text-emerald-400">90%</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div id="formatScoreBar" class="bg-emerald-500 h-1.5 rounded-full" style="width: 90%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500">Evaluates Contact, Skills, Experience, and Education sections.</p>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex justify-between text-slate-300">
+                  <span>Keyword Variety & Readability</span>
+                  <span id="readabilityScoreText" class="font-bold text-pink-400">86%</span>
+                </div>
+                <div class="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                  <div id="readabilityScoreBar" class="bg-pink-500 h-1.5 rounded-full" style="width: 86%"></div>
+                </div>
+                <p class="text-[10px] text-slate-500">Checks for optimal keyword distribution and avoids over-stuffing.</p>
+              </div>
+            </div>
+
+            <!-- Actionable ATS Recommendations -->
+            <div class="pt-2 space-y-2">
+              <h4 class="text-xs font-semibold text-slate-300 uppercase tracking-wider">ATS Optimization Suggestions</h4>
+              <div id="atsSuggestionsList" class="space-y-2">
+                <!-- Injected Suggestions -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 2: JOB MATCH & SKILL GAP ANALYSIS -->
+    <!-- ========================================================================= -->
+    <section id="match-tab" class="tab-content hidden space-y-6">
+      
+      <!-- Top Job Match Selector Banner -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span>🎯 Real-Time Resume vs Job Description Match Engine</span>
+            </h2>
+            <p class="text-xs text-slate-400">
+              Uses TF-IDF Vectorization & Multi-Word Semantic Skill Taxonomy to evaluate exact and contextual fit.
+            </p>
+          </div>
+
+          <!-- Target Job Preset Picker -->
+          <div class="flex items-center space-x-2 text-xs">
+            <span class="text-slate-400">Target Role:</span>
+            <select id="targetJobSelect" onchange="loadTargetJob(this.value)" class="bg-slate-900 border border-slate-700 text-slate-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-indigo-500">
+              <option value="job_1">Lead AI / ML Systems Engineer @ OpenAI</option>
+              <option value="job_2">Senior Full Stack Architect @ Stripe</option>
+              <option value="job_3">Principal Cloud & DevOps Engineer @ AWS</option>
+              <option value="job_4">Staff Cyber Security Engineer @ CrowdStrike</option>
+              <option value="job_5">Lead Technical Product Manager @ Google</option>
+              <option value="custom">-- Custom Job Description (Paste Below) --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- JD Text Box -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between text-xs">
+            <label for="jobDescText" class="font-medium text-slate-300">Target Job Description (JD):</label>
+            <button onclick="calculateMatch()" class="text-indigo-400 hover:text-indigo-300 font-semibold text-xs transition">Re-compute Match</button>
+          </div>
+          <textarea id="jobDescText" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-slate-200 font-mono focus:outline-none focus:border-indigo-500 custom-scrollbar resize-y" placeholder="Paste the job description here to screen your resume..."></textarea>
+        </div>
+      </div>
+
+      <!-- Match Score Dashboard (4 Metrics) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Overall Match Gauge -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 text-center space-y-2 shadow-lg relative overflow-hidden">
+          <div class="text-xs text-slate-400 font-medium">Overall Compatibility</div>
+          <div class="relative flex items-center justify-center">
+            <svg class="w-24 h-24 transform -rotate-90">
+              <circle cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" class="text-slate-700" fill="transparent"/>
+              <circle id="overallCircle" cx="48" cy="48" r="38" stroke="currentColor" stroke-width="8" class="text-indigo-500 transition-all duration-1000 ease-out" stroke-dasharray="238.76" stroke-dashoffset="30" stroke-linecap="round" fill="transparent"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="overallMatchNumber" class="text-2xl font-black text-white">88%</span>
+              <span id="matchTierBadge" class="text-[9px] uppercase font-bold text-emerald-400">High Match</span>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">Weighted composite of skills, experience, and NLP similarity.</p>
+        </div>
+
+        <!-- Semantic NLP / TF-IDF Similarity -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2 shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-400 font-medium">TF-IDF Vector Cosine</span>
+              <span id="nlpScoreText" class="text-sm font-bold text-purple-400">84%</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2 mt-2 overflow-hidden">
+              <div id="nlpScoreBar" class="bg-purple-500 h-2 rounded-full" style="width: 84%"></div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">Evaluates multi-word n-gram context and domain terminology overlap.</p>
+        </div>
+
+        <!-- Skills Overlap % -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2 shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-400 font-medium">Technical Skill Coverage</span>
+              <span id="skillOverlapText" class="text-sm font-bold text-emerald-400">91%</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2 mt-2 overflow-hidden">
+              <div id="skillOverlapBar" class="bg-emerald-500 h-2 rounded-full" style="width: 91%"></div>
+            </div>
+          </div>
+          <p id="skillFractionText" class="text-[11px] text-slate-400">10 of 11 required skills matched (including synonyms).</p>
+        </div>
+
+        <!-- Experience & Seniority Fit -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-4 space-y-2 shadow-lg flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-slate-400 font-medium">Experience / Seniority</span>
+              <span id="expFitText" class="text-sm font-bold text-pink-400">95%</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2 mt-2 overflow-hidden">
+              <div id="expFitBar" class="bg-pink-500 h-2 rounded-full" style="width: 95%"></div>
+            </div>
+          </div>
+          <p id="expFitDetails" class="text-[11px] text-slate-400">Candidate has 5.5 yrs; JD requests 4+ yrs (Ideal fit).</p>
+        </div>
+      </div>
+
+      <!-- SKILL GAP MATRIX & RADAR CHART -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- SKILL GAP DETAILS (7 COLS) -->
+        <div class="lg:col-span-7 bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                <span>Detailed Skill Gap Matrix</span>
+              </h3>
+              <p class="text-xs text-slate-400">Breakdown of matched, related/synonym, and missing requirements</p>
+            </div>
+          </div>
+
+          <!-- Matched Skills (Green) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-emerald-400 flex items-center space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span>Matched Core Skills (<span id="matchedCount">0</span>)</span>
+              </span>
+              <span class="text-[10px] text-slate-500">Verified in Candidate Profile</span>
+            </div>
+            <div id="matchedSkillsList" class="flex flex-wrap gap-1.5">
+              <!-- Matched skills tags -->
+            </div>
+          </div>
+
+          <!-- Missing / Gap Skills (Red/Orange) -->
+          <div class="space-y-2 pt-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-rose-400 flex items-center space-x-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                <span>Missing In-Demand Skills (<span id="missingCount">0</span>)</span>
+              </span>
+              <span class="text-[10px] text-slate-500">Recommended for Upskilling</span>
+            </div>
+            <div id="missingSkillsList" class="flex flex-wrap gap-1.5">
+              <!-- Missing skills tags -->
+            </div>
+          </div>
+
+          <!-- Tailored Resume Recommendations -->
+          <div class="space-y-2 pt-3 border-t border-slate-700/60">
+            <h4 class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Actionable Strategy to Beat ATS for this Role:</h4>
+            <div id="jobSpecificAdvice" class="space-y-2 text-xs text-slate-300">
+              <!-- Injected targeted advice -->
+            </div>
+          </div>
+        </div>
+
+        <!-- RADAR / SPIDER CHART (5 COLS) -->
+        <div class="lg:col-span-5 bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+              <div>
+                <h3 class="text-sm font-bold text-white">Domain Competency Radar</h3>
+                <p class="text-xs text-slate-400">Candidate vs Job Role Benchmark</p>
+              </div>
+              <div class="flex items-center space-x-2 text-[10px]">
+                <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-indigo-500 mr-1"></span> Candidate</span>
+                <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-purple-400 mr-1"></span> Target JD</span>
+              </div>
+            </div>
+
+            <!-- Radar Canvas -->
+            <div class="relative w-full aspect-square max-w-[280px] mx-auto my-3 flex items-center justify-center">
+              <canvas id="radarCanvas" width="280" height="280" class="w-full h-full"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 text-[11px] text-slate-300 space-y-1">
+            <span class="font-bold text-indigo-400 block">AI Strategic Summary:</span>
+            <p id="radarSummaryText">Strong alignment in Machine Learning, Python Architecture, and Cloud deployment. Add explicit mention of distributed training (DeepSpeed / vLLM) to achieve a 98%+ match score.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 3: AI JOB RECOMMENDATION ENGINE -->
+    <!-- ========================================================================= -->
+    <section id="jobs-tab" class="tab-content hidden space-y-6">
+      
+      <!-- Top Filters & Search -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span>💼 AI Job Recommendation Engine</span>
+              <span class="text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">Ranked by Vector Similarity</span>
+            </h2>
+            <p class="text-xs text-slate-400">
+              Live algorithmic matching of the current resume against our database of 12+ curated tech openings.
+            </p>
+          </div>
+
+          <!-- Filter Controls -->
+          <div class="flex flex-wrap items-center gap-2 text-xs">
+            <select id="filterDomain" onchange="filterJobs()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="all">All Domains</option>
+              <option value="ai">AI / Data Science</option>
+              <option value="software">Software Engineering</option>
+              <option value="devops">Cloud & DevOps</option>
+              <option value="security">Cyber Security</option>
+              <option value="product">Product & Management</option>
+            </select>
+
+            <select id="filterMatchTier" onchange="filterJobs()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="all">All Match Scores</option>
+              <option value="85">85%+ (Strong Matches)</option>
+              <option value="70">70%+ (Good Matches)</option>
+              <option value="50">50%+ (Potential)</option>
+            </select>
+
+            <select id="filterWorkMode" onchange="filterJobs()" class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-indigo-500">
+              <option value="all">All Work Modes</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+              <option value="On-site">On-site</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommended Job Cards Grid -->
+      <div id="jobCardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Injected Job Cards -->
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 4: RECRUITER BATCH SCREENER & COMPARISON -->
+    <!-- ========================================================================= -->
+    <section id="recruiter-tab" class="tab-content hidden space-y-6">
+      
+      <!-- Top Recruiter Config -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-lg font-bold text-white">👥 Recruiter Batch Screening & Ranking Leaderboard</h2>
+              <span class="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">HR Mode</span>
+            </div>
+            <p class="text-xs text-slate-400">
+              Screen multiple applicant resumes simultaneously against a target job requisition. Automatically ranks by qualification fit.
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-3">
+            <button onclick="exportRecruiterCSV()" class="bg-slate-900 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+              <span>Export CSV</span>
+            </button>
+            <button onclick="addCandidateModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+              <span>+ Add Candidate</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Target Requisition Selector -->
+        <div class="flex flex-wrap items-center gap-3 pt-2 text-xs border-t border-slate-700/60">
+          <span class="font-medium text-slate-300">Screening Against Job Opening:</span>
+          <select id="recruiterJobSelect" onchange="runRecruiterBatchScreening()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-1 text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="job_1">Lead AI / ML Systems Engineer @ OpenAI</option>
+            <option value="job_2">Senior Full Stack Architect @ Stripe</option>
+            <option value="job_3">Principal Cloud & DevOps Engineer @ AWS</option>
+            <option value="job_4">Staff Cyber Security Engineer @ CrowdStrike</option>
+            <option value="job_5">Lead Technical Product Manager @ Google</option>
+          </select>
+          <span class="text-slate-500">|</span>
+          <span id="batchCandidatesCount" class="text-slate-400">6 Resumes in Pipeline</span>
+        </div>
+      </div>
+
+      <!-- CANDIDATE RANKING TABLE -->
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl shadow-lg overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-700">
+              <tr>
+                <th class="py-3.5 px-4">Rank</th>
+                <th class="py-3.5 px-4">Candidate Profile</th>
+                <th class="py-3.5 px-4 text-center">Overall Fit</th>
+                <th class="py-3.5 px-4 text-center">Skill Overlap</th>
+                <th class="py-3.5 px-4 text-center">Experience</th>
+                <th class="py-3.5 px-4 text-center">Education</th>
+                <th class="py-3.5 px-4 text-center">Status Decision</th>
+                <th class="py-3.5 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="recruiterTableBody" class="divide-y divide-slate-700/60 font-sans">
+              <!-- Injected Candidate Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- TAB 5: AI INTERVIEW PREPARATION ASSISTANT -->
+    <!-- ========================================================================= -->
+    <section id="interview-tab" class="tab-content hidden space-y-6">
+      <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 class="text-lg font-bold text-white">🎤 AI Dynamic Interview Preparation Assistant</h2>
+              <span class="text-xs bg-pink-500/20 text-pink-300 px-2 py-0.5 rounded-full border border-pink-500/30">Targeted Q&A</span>
+            </div>
+            <p class="text-xs text-slate-400">
+              Generates customized technical, behavioral, and gap-probing interview questions based on the candidate's resume and target job requirements.
+            </p>
+          </div>
+          <button onclick="generateInterviewQuestions()" class="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>Regenerate Questions</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Interview Questions Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Category 1: Technical Strengths Deep Dive -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+          <div class="flex items-center space-x-2 text-emerald-400 border-b border-slate-700/60 pb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+            <h3 class="text-sm font-bold text-white">1. Core Technical Deep-Dive</h3>
+          </div>
+          <p class="text-xs text-slate-400">Questions verifying your listed accomplishments and frameworks.</p>
+          <div id="techQuestionsList" class="space-y-3">
+            <!-- Injected Questions -->
+          </div>
+        </div>
+
+        <!-- Category 2: Skill Gap Probing Questions -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+          <div class="flex items-center space-x-2 text-amber-400 border-b border-slate-700/60 pb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <h3 class="text-sm font-bold text-white">2. Skill Gap & Adaptability</h3>
+          </div>
+          <p class="text-xs text-slate-400">Probing missing skills and assessing ability to ramp up fast.</p>
+          <div id="gapQuestionsList" class="space-y-3">
+            <!-- Injected Questions -->
+          </div>
+        </div>
+
+        <!-- Category 3: Situational & Behavioral (STAR Method) -->
+        <div class="bg-slate-800/80 border border-slate-700 rounded-2xl p-5 shadow-lg space-y-4">
+          <div class="flex items-center space-x-2 text-indigo-400 border-b border-slate-700/60 pb-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
+            <h3 class="text-sm font-bold text-white">3. Behavioral & Leadership (STAR)</h3>
+          </div>
+          <p class="text-xs text-slate-400">Scenario-based questions assessing teamwork, delivery, and trade-offs.</p>
+          <div id="behavioralQuestionsList" class="space-y-3">
+            <!-- Injected Questions -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD CANDIDATE (RECRUITER MODE) -->
+  <div id="addCandidateModalEl" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <h3 class="text-base font-bold text-white">Add New Candidate to Screening Pipeline</h3>
+        <button onclick="closeModal('addCandidateModalEl')" class="text-slate-400 hover:text-white">&times;</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Candidate Name:</label>
+          <input type="text" id="newCandName" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="e.g. Jordan Miller" />
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Candidate Email:</label>
+          <input type="email" id="newCandEmail" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="e.g. jordan.m@example.com" />
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">Resume Text:</label>
+          <textarea id="newCandResume" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-slate-200 font-mono text-xs focus:outline-none focus:border-indigo-500" placeholder="Paste candidate's resume text here..."></textarea>
+        </div>
+      </div>
+      <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-700">
+        <button onclick="closeModal('addCandidateModalEl')" class="px-4 py-2 text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+        <button onclick="saveNewCandidate()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow">Add & Screen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW JOB DETAILS & ATS TAILORING TIPS -->
+  <div id="jobDetailsModalEl" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div>
+          <h3 id="modalJobTitle" class="text-base font-bold text-white">Lead AI Systems Engineer</h3>
+          <p id="modalJobCompany" class="text-xs text-indigo-400">OpenAI • San Francisco, CA (Hybrid)</p>
+        </div>
+        <button onclick="closeModal('jobDetailsModalEl')" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+      
+      <div class="space-y-3 text-xs text-slate-300">
+        <div class="grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700">
+          <div>
+            <span class="text-slate-500 block text-[10px]">Salary Range</span>
+            <span id="modalJobSalary" class="font-bold text-emerald-400">$190,000 - $250,000</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block text-[10px]">Experience</span>
+            <span id="modalJobExp" class="font-bold text-slate-200">4+ Years</span>
+          </div>
+          <div>
+            <span class="text-slate-500 block text-[10px]">Fit Score</span>
+            <span id="modalJobMatchScore" class="font-bold text-indigo-400">92% Match</span>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-slate-200 mb-1">Job Description:</h4>
+          <p id="modalJobDesc" class="text-slate-400 leading-relaxed font-sans bg-slate-900/40 p-3 rounded-xl border border-slate-700/50"></p>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-indigo-300 mb-1">Tailored Actionable Tips to Maximize ATS Score for This Job:</h4>
+          <ul id="modalJobTipsList" class="space-y-1.5 list-disc list-inside text-slate-300 bg-indigo-950/20 border border-indigo-500/30 p-3 rounded-xl">
+            <!-- Injected tips -->
+          </ul>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-700">
+        <button onclick="applyForJob()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow transition">
+          🚀 Apply with Tailored Profile
+        </button>
+        <button onclick="closeModal('jobDetailsModalEl')" class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg text-xs font-medium">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EMBEDDED JAVASCRIPT: DATASETS, NLP ENGINE, ATS AUDITOR, & UI CONTROLLER -->
+  <script>
+    // =========================================================================
+    // 1. COMPREHENSIVE SKILL TAXONOMY & SYNONYMS
+    // =========================================================================
+    const SKILL_TAXONOMY = {
+      // Languages
+      "python": ["py", "python3", "python 3"],
+      "javascript": ["js", "ecmascript", "es6", "es2020"],
+      "typescript": ["ts"],
+      "java": ["core java", "j2ee"],
+      "c++": ["cpp", "cplusplus"],
+      "c#": ["csharp", ".net", "dotnet"],
+      "golang": ["go", "go lang"],
+      "rust": ["rustlang"],
+      "sql": ["structured query language", "tsql", "plsql"],
+      "r": ["r-project", "rlang"],
+      "scala": ["scala lang"],
+      "ruby": ["ruby on rails", "rails"],
+      "php": ["php7", "php8", "laravel"],
+      "swift": ["swiftui", "ios"],
+      "kotlin": ["android kotlin"],
+      "html5": ["html"],
+      "css3": ["css", "sass", "scss", "tailwind", "bootstrap"],
+
+      // AI / ML / Data Science
+      "machine learning": ["ml", "statistical learning"],
+      "deep learning": ["neural networks", "dl", "ann", "cnn", "rnn"],
+      "pytorch": ["torch"],
+      "tensorflow": ["tf", "keras"],
+      "natural language processing": ["nlp", "text mining", "ner", "bert", "gpt", "llm", "large language models"],
+      "computer vision": ["cv", "opencv", "yolo", "image segmentation"],
+      "langchain": ["langsmith", "llamaindex"],
+      "transformers": ["huggingface", "hugging face"],
+      "scikit-learn": ["sklearn"],
+      "pandas": ["dataframe manipulation"],
+      "numpy": ["numerical python"],
+      "rag": ["retrieval augmented generation", "vector search", "pinecone", "chromadb", "weaviate", "faiss"],
+      "mlops": ["model deployment", "kubeflow", "mlflow", "wandb", "dvc"],
+
+      // Web & Frameworks
+      "react": ["react.js", "reactjs"],
+      "next.js": ["nextjs", "next"],
+      "node.js": ["nodejs", "node"],
+      "express.js": ["express"],
+      "vue.js": ["vue", "vuejs", "nuxt"],
+      "angular": ["angularjs", "angular 2+"],
+      "django": ["django rest framework", "drf"],
+      "fastapi": ["fast api"],
+      "flask": ["flask framework"],
+      "spring boot": ["spring", "springboot", "java spring"],
+      "graphql": ["apollo", "graphql api"],
+      "rest api": ["restful", "rest apis", "restful web services"],
+      "tailwind css": ["tailwind", "tailwindcss"],
+
+      // Cloud, DevOps & Infra
+      "aws": ["amazon web services", "ec2", "s3", "lambda", "rds", "cloudformation", "iam"],
+      "azure": ["microsoft azure", "azure devops", "blob storage"],
+      "google cloud": ["gcp", "google cloud platform", "bigquery"],
+      "docker": ["containerization", "containers", "dockerfile"],
+      "kubernetes": ["k8s", "helm", "k8s clusters"],
+      "terraform": ["iac", "infrastructure as code"],
+      "ci/cd": ["continuous integration", "github actions", "gitlab ci", "jenkins", "circleci"],
+      "linux": ["unix", "bash", "shell scripting", "ubuntu"],
+      "prometheus": ["grafana", "datadog", "observability", "monitoring"],
+      "ansible": ["configuration management"],
+
+      // Databases & Caching
+      "postgresql": ["postgres", "psql"],
+      "mysql": ["mariadb"],
+      "mongodb": ["mongo", "nosql"],
+      "redis": ["caching", "in-memory db"],
+      "elasticsearch": ["elastic search", "opensearch", "elk stack"],
+      "snowflake": ["data warehousing", "redshift", "bigquery"],
+      "kafka": ["apache kafka", "event streaming", "pubsub"],
+
+      // Security
+      "cyber security": ["infosec", "information security"],
+      "penetration testing": ["pen testing", "ethical hacking", "burp suite"],
+      "soc2": ["iso 27001", "compliance", "gdpr", "hipaa"],
+      "siem": ["splunk", "sentinel", "qradar"],
+      "zero trust": ["identity access management", "iam", "oauth2", "jwt"],
+
+      // Management & Methodologies
+      "agile": ["scrum", "kanban", "sprint planning"],
+      "system design": ["distributed systems", "microservices architecture", "scalability"],
+      "product management": ["roadmapping", "user stories", "kpi tracking", "a/b testing"],
+      "git": ["github", "gitlab", "version control"]
+    };
+
+    // ACTION VERBS for ATS Scoring
+    const ACTION_VERBS = [
+      "spearheaded", "orchestrated", "engineered", "developed", "architected",
+      "implemented", "optimized", "streamlined", "accelerated", "deployed",
+      "designed", "reduced", "scaled", "automated", "mentored", "managed",
+      "collaborated", "achieved", "delivered", "transformed", "increased",
+      "pioneered", "built", "modernized", "resolved", "executed"
+    ];
+
+    // =========================================================================
+    // 2. CANDIDATE PROFILES DATASET (REALISTIC SAMPLES)
+    // =========================================================================
+    const PRESET_CANDIDATES = {
+      "ml_engineer": {
+        name: "Alex Rivera",
+        email: "alex.rivera@example.com",
+        phone: "+1 (555) 349-8821",
+        location: "San Francisco, CA",
+        role: "Senior AI & Machine Learning Engineer",
+        experienceYears: 5.5,
+        education: "M.S. in Computer Science - Stanford University",
+        eduDetails: "Specialization: Artificial Intelligence & NLP (GPA: 3.9)",
+        rawText: `Alex Rivera
+San Francisco, CA | +1 (555) 349-8821 | alex.rivera@example.com | linkedin.com/in/alex-rivera-ml | github.com/alexrivera-ai
+
+PROFESSIONAL SUMMARY
+Senior AI & Machine Learning Engineer with 5.5+ years of production experience architecting end-to-end deep learning pipelines, Large Language Models (LLMs), RAG systems, and distributed training systems. Proven track record of reducing latency by 42% and scaling inference to 10M+ daily requests on AWS and Kubernetes.
+
+CORE TECHNICAL SKILLS
+- Programming Languages: Python, C++, SQL, Bash, Go
+- Machine Learning & Deep Learning: PyTorch, TensorFlow, Transformers, HuggingFace, Scikit-Learn, LangChain, RAG, NLP, Computer Vision
+- MLOps & Cloud: AWS (EC2, S3, SageMaker, Lambda), Docker, Kubernetes (K8s), MLflow, Ray, vLLM, DeepSpeed
+- Databases & Vector DBs: PostgreSQL, Redis, Pinecone, Milvus, ChromaDB
+- Practices: Distributed Systems, System Design, CI/CD, Agile, Git
+
+WORK EXPERIENCE
+Senior AI Engineer | NeuroTech Labs, San Francisco, CA | 2022 - Present
+- Spearheaded the design and deployment of a multi-modal RAG LLM pipeline using PyTorch, LangChain, and Pinecone, increasing retrieval accuracy by 38%.
+- Optimized transformer model inference utilizing TensorRT and vLLM on NVIDIA H100 GPUs, cutting latency from 180ms to 45ms (75% speedup).
+- Architected automated MLOps pipelines with MLflow and Kubernetes, enabling zero-downtime model rollouts for over 15M daily active users.
+- Mentored a high-performing team of 6 junior ML engineers and conducted 30+ technical code reviews.
+
+Machine Learning Engineer | DataVision Analytics, Seattle, WA | 2019 - 2022
+- Engineered custom NLP BERT-based classification models achieving a 94.8% F1-score across 5M multilingual customer documents.
+- Developed distributed data processing pipelines using Python, Pandas, and AWS S3, reducing ETL processing time by 52%.
+- Integrated real-time fraud detection microservices using FastAPI, Redis, and Docker, saving an estimated $2.4M annually.
+
+EDUCATION
+Master of Science in Computer Science | Stanford University (2017 - 2019)
+- Focus: Deep Learning, Natural Language Processing, Computer Systems. GPA: 3.9/4.0
+
+Bachelor of Science in Computer Engineering | University of California, Berkeley (2013 - 2017)`
+      },
+
+      "fullstack_dev": {
+        name: "Sarah Chen",
+        email: "sarah.chen@techdev.io",
+        phone: "+1 (555) 882-9012",
+        location: "New York, NY",
+        role: "Senior Full Stack Software Architect",
+        experienceYears: 6.0,
+        education: "B.S. in Computer Science - Columbia University",
+        eduDetails: "Summa Cum Laude (GPA: 3.92)",
+        rawText: `Sarah Chen
+New York, NY | +1 (555) 882-9012 | sarah.chen@techdev.io | linkedin.com/in/sarahchen-dev | github.com/sarahchen
+
+PROFESSIONAL SUMMARY
+Senior Full Stack Engineer with 6+ years of experience architecting high-scale distributed web applications using React, Next.js, Node.js, TypeScript, PostgreSQL, and AWS. Proven leader in reducing page load times by 65% and delivering resilient fintech platforms handling $50M+ monthly transactions.
+
+CORE TECHNICAL SKILLS
+- Frontend: React, Next.js, TypeScript, JavaScript, HTML5, CSS3, Tailwind CSS, Redux Toolkit, Webpack
+- Backend & APIs: Node.js, Express.js, NestJS, GraphQL, REST API, Python, Go
+- Cloud & DevOps: AWS (ECS, Lambda, S3, CloudFront), Docker, Kubernetes, GitHub Actions, Terraform
+- Databases: PostgreSQL, MongoDB, Redis, Prisma ORM
+- Architecture: Microservices, System Design, Event-Driven Architecture, Kafka, Agile
+
+WORK EXPERIENCE
+Senior Full Stack Architect | FinFlow Systems, New York, NY | 2021 - Present
+- Architected enterprise React/Next.js and Node.js microservices processing $50M+ in recurring monthly fintech transactions.
+- Modernized legacy frontend into Next.js 14 App Router and Tailwind CSS, improving Google Lighthouse performance scores from 42 to 98.
+- Engineered resilient GraphQL and REST APIs with Redis caching, reducing server response times by 55% across 200k daily users.
+- Spearheaded CI/CD automation with GitHub Actions and AWS ECS, decreasing deployment cycle from 2 days to 15 minutes.
+
+Full Stack Software Engineer | CloudStack Solutions, Boston, MA | 2018 - 2021
+- Developed responsive web applications using React, TypeScript, and Express.js for Fortune 500 healthcare clients.
+- Designed database schemas in PostgreSQL and MongoDB, optimizing slow queries to achieve 4x throughput improvements.
+- Integrated automated testing suites with Jest and Cypress, elevating unit and end-to-end code coverage to 92%.
+
+EDUCATION
+Bachelor of Science in Computer Science | Columbia University, New York (2014 - 2018)`
+      },
+
+      "devops_architect": {
+        name: "David Kumar",
+        email: "david.kumar@cloudops.net",
+        phone: "+1 (555) 431-7762",
+        location: "Austin, TX",
+        role: "Principal Cloud & DevOps Architect",
+        experienceYears: 7.5,
+        education: "B.Tech in Information Technology - UT Austin",
+        eduDetails: "Certified Kubernetes Administrator (CKA), AWS Solutions Architect Pro",
+        rawText: `David Kumar
+Austin, TX | +1 (555) 431-7762 | david.kumar@cloudops.net | linkedin.com/in/david-kumar-devops
+
+PROFESSIONAL SUMMARY
+Principal Cloud & DevOps Architect with 7.5+ years of experience specializing in Kubernetes orchestration, Infrastructure as Code (Terraform), AWS/GCP multi-cloud architectures, and high-reliability CI/CD automation. Slashed cloud infrastructure costs by 34% ($600K/year) while maintaining 99.999% uptime.
+
+CORE TECHNICAL SKILLS
+- Cloud Platforms: AWS (EKS, IAM, VPC, CloudWatch, Route53), Google Cloud (GCP, GKE), Azure
+- Orchestration & Containers: Kubernetes (K8s), Docker, Helm, ArgoCD, Istio Service Mesh
+- Infrastructure as Code: Terraform, Terragrunt, Ansible, CloudFormation
+- CI/CD & Automation: GitHub Actions, GitLab CI, Jenkins, Bash, Python, Go
+- Observability: Prometheus, Grafana, Datadog, ELK Stack, Jaeger
+- Security & Compliance: SOC2, ISO 27001, HashiCorp Vault, Zero Trust
+
+WORK EXPERIENCE
+Principal DevOps Architect | ScaleCloud Enterprise, Austin, TX | 2020 - Present
+- Designed and maintained production multi-region Kubernetes clusters across AWS and GCP hosting 400+ microservices.
+- Automated 100% of infrastructure provisioning via Terraform and GitOps (ArgoCD), eliminating manual configuration drift.
+- Architected enterprise observability stack using Prometheus, Grafana, and Datadog, lowering MTTR (Mean Time to Resolution) by 62%.
+- Spearheaded cloud cost optimization audits, reducing AWS monthly expenditure by $50,000 without sacrificing performance.
+
+Senior DevOps Engineer | Nexus Digital, Dallas, TX | 2017 - 2020
+- Built zero-downtime blue/green deployment pipelines with Jenkins and Docker for a high-traffic e-commerce platform.
+- Managed PostgreSQL and Redis replication topologies ensuring RPO < 1 min and RTO < 5 min.
+
+EDUCATION & CERTIFICATIONS
+- B.Tech in Information Technology | University of Texas at Austin (2013 - 2017)
+- AWS Certified Solutions Architect - Professional | Certified Kubernetes Administrator (CKA)`
+      },
+
+      "product_mgr": {
+        name: "Elena Rostova",
+        email: "elena.rostova@prodlead.org",
+        phone: "+1 (555) 912-3344",
+        location: "Seattle, WA",
+        role: "Lead Technical Product Manager",
+        experienceYears: 6.0,
+        education: "MBA - Northwestern Kellogg & B.S. in Computer Science",
+        eduDetails: "Product Strategy & Agile Certified Scrum Product Owner (CSPO)",
+        rawText: `Elena Rostova
+Seattle, WA | +1 (555) 912-3344 | elena.rostova@prodlead.org | linkedin.com/in/elena-rostova-pm
+
+PROFESSIONAL SUMMARY
+Lead Technical Product Manager with 6+ years driving product strategy, roadmap execution, and user-centric growth for enterprise SaaS and AI-driven platforms. Successfully grew ARR from $8M to $32M while leading cross-functional teams of 25+ engineers, data scientists, and UX designers.
+
+CORE SKILLS
+- Product Strategy: Product Roadmapping, Go-To-Market (GTM), PRDs, Customer Discovery, Market Research, A/B Testing
+- Technical Fluency: SQL, Python, System Design, REST APIs, Cloud Infrastructure, Machine Learning Concepts
+- Methodologies: Agile, Scrum, Kanban, Sprint Planning, OKRs, KPI Tracking, User Story Mapping
+- Analytics & Tools: Jira, Confluence, Amplitude, Mixpanel, Tableau, Figma
+
+WORK EXPERIENCE
+Lead Technical Product Manager | Synthetix AI, Seattle, WA | 2021 - Present
+- Led the end-to-end product lifecycle for a B2B generative AI automation suite, scaling from 0 to 120+ enterprise customers and $14M ARR in 18 months.
+- Defined product requirements (PRDs), user journeys, and technical API specifications in close collaboration with engineering and ML teams.
+- Instituted rigorous data-driven experimentation via Amplitude and Mixpanel, driving a 44% increase in user retention.
+- Managed sprint backlogs, release milestones, and executive stakeholder reviews using Agile Scrum methodologies.
+
+Technical Product Manager | SaaSify Cloud, San Francisco, CA | 2018 - 2021
+- Spearheaded the redesign of core onboarding workflows, reducing customer time-to-value from 14 days to 48 hours.
+- Authored 80+ comprehensive user stories and conducted 100+ customer discovery interviews.
+
+EDUCATION
+- Master of Business Administration (MBA) | Kellogg School of Management, Northwestern University (2018 - 2020)
+- B.S. in Computer Science | University of Washington (2014 - 2018)`
+      },
+
+      "cyber_security": {
+        name: "Marcus Vance",
+        email: "marcus.vance@securesys.io",
+        phone: "+1 (555) 774-2199",
+        location: "Washington, DC",
+        role: "Staff Cyber Security & SecOps Engineer",
+        experienceYears: 7.0,
+        education: "B.S. in Cybersecurity & Forensics - George Mason University",
+        eduDetails: "CISSP, CEH, CompTIA Security+ Certified",
+        rawText: `Marcus Vance
+Washington, DC | +1 (555) 774-2199 | marcus.vance@securesys.io | linkedin.com/in/marcusvance-cyber
+
+PROFESSIONAL SUMMARY
+Staff Cyber Security Engineer with 7+ years of experience leading enterprise threat detection, incident response, vulnerability management, and cloud security architecture (AWS/Azure). Successfully defended Fortune 500 networks against sophisticated APT threats and achieved 100% SOC2 and ISO 27001 compliance.
+
+CORE SKILLS
+- Security Disciplines: Penetration Testing, Incident Response, Threat Modeling, Vulnerability Assessment, SIEM, SecOps
+- Tools & Platforms: Splunk, CrowdStrike Falcon, Burp Suite, Wireshark, Metasploit, Nessus, HashiCorp Vault
+- Cloud & Infrastructure: AWS IAM, Azure Sentinel, Linux Security, Docker Security, Zero Trust Architecture, WAF
+- Compliance: SOC2 Type II, ISO 27001, HIPAA, GDPR, NIST Framework
+- Languages & Scripting: Python, Bash, PowerShell, SQL
+
+WORK EXPERIENCE
+Staff Cyber Security Engineer | Fortress Defense, Washington, DC | 2021 - Present
+- Orchestrated enterprise SOC operations utilizing Splunk SIEM and CrowdStrike Falcon, decreasing mean incident containment time by 68%.
+- Conducted regular internal penetration tests, identifying and remediating 45+ critical CVEs across web applications and cloud infrastructure.
+- Designed and deployed automated DevSecOps security scanning pipelines (SAST/DAST) in GitHub Actions.
+- Spearheaded annual SOC2 Type II audit, attaining clean certification with zero non-conformances.
+
+Information Security Analyst | Apex Financial, McLean, VA | 2018 - 2021
+- Monitored 24/7 network traffic, analyzed firewall logs, and neutralized over 300+ phishing, malware, and brute-force intrusion attempts.
+- Enforced strict IAM least-privilege policies and multi-factor authentication (MFA) across 4,000 corporate identities.
+
+EDUCATION & CERTIFICATIONS
+- B.S. in Cybersecurity | George Mason University (2014 - 2018)
+- CISSP (Certified Information Systems Security Professional) | Certified Ethical Hacker (CEH)`
+      },
+
+      "junior_frontend": {
+        name: "Liam Johnson",
+        email: "liam.j@webcode.dev",
+        phone: "+1 (555) 233-1190",
+        location: "Chicago, IL",
+        role: "Junior Frontend Developer",
+        experienceYears: 1.5,
+        education: "B.S. in Web Development - DePaul University",
+        eduDetails: "Graduated with Honors (2023)",
+        rawText: `Liam Johnson
+Chicago, IL | +1 (555) 233-1190 | liam.j@webcode.dev | github.com/liamj-frontend
+
+PROFESSIONAL SUMMARY
+Passionate Junior Frontend Developer with 1.5 years of experience building modern, accessible, and responsive user interfaces with React, JavaScript, HTML5, CSS3, and Tailwind CSS. Enthusiastic team player with solid fundamentals in Git, REST API consumption, and component-driven UI architecture.
+
+CORE TECHNICAL SKILLS
+- Languages: JavaScript (ES6+), HTML5, CSS3, TypeScript (Basics)
+- Frameworks & Libraries: React, Tailwind CSS, Bootstrap, Redux Basics
+- Tools & Workflow: Git, GitHub, VS Code, npm, Webpack, Vite, Figma
+- Concepts: Responsive Web Design, Mobile-First Development, DOM Manipulation, REST API Integration
+
+WORK EXPERIENCE
+Junior Frontend Developer | PixelCraft Studio, Chicago, IL | 2023 - Present
+- Built 15+ pixel-perfect landing pages and responsive client dashboards using React and Tailwind CSS.
+- Integrated third-party RESTful APIs and managed UI state seamlessly with React hooks (useState, useEffect).
+- Collaborated with UI/UX designers in Figma to translate wireframes into interactive code components.
+- Optimized web assets, improving average First Contentful Paint (FCP) by 28%.
+
+Web Development Intern | NextGen Media, Chicago, IL | 2022 - 2023
+- Assisted senior engineers in debugging CSS layouts and refactoring legacy jQuery code to modern ES6 JavaScript.
+- Wrote clean semantic HTML and ensured WCAG accessibility standards across client web portals.
+
+EDUCATION
+Bachelor of Science in Web Development | DePaul University, Chicago (2019 - 2023)`
+      }
+    };
+
+    // =========================================================================
+    // 3. TARGET JOBS DATABASE (FOR MATCHING & RECOMMENDATIONS)
+    // =========================================================================
+    const JOBS_DATABASE = [
+      {
+        id: "job_1",
+        title: "Lead AI / ML Systems Engineer",
+        company: "OpenAI / Applied AI Labs",
+        location: "San Francisco, CA",
+        workMode: "Hybrid",
+        domain: "ai",
+        salary: "$190,000 - $260,000",
+        minExp: 4,
+        requiredDegree: "Master's or Bachelor's in CS / AI",
+        skills: ["python", "pytorch", "transformers", "langchain", "rag", "natural language processing", "kubernetes", "docker", "aws", "system design", "vector search", "deep learning"],
+        description: "We are seeking a Lead AI Systems Engineer to design high-performance LLM infrastructure, distributed model serving pipelines, and real-time RAG systems. You will work with PyTorch, vLLM, LangChain, Kubernetes, and GPU clusters to deliver sub-50ms inference to millions of developers worldwide."
+      },
+      {
+        id: "job_2",
+        title: "Senior Full Stack Architect",
+        company: "Stripe",
+        location: "New York, NY",
+        workMode: "Remote",
+        domain: "software",
+        salary: "$180,000 - $240,000",
+        minExp: 5,
+        requiredDegree: "Bachelor's in Computer Science",
+        skills: ["react", "next.js", "typescript", "node.js", "postgresql", "graphql", "rest api", "aws", "docker", "redis", "system design", "ci/cd"],
+        description: "Stripe is looking for a Senior Full Stack Architect to build mission-critical financial interfaces and scalable backend services. You'll drive technical decisions across our React/Next.js frontend and Node.js/PostgreSQL microservices processing billions of dollars in global transactions."
+      },
+      {
+        id: "job_3",
+        title: "Principal Cloud & DevOps Engineer",
+        company: "Amazon Web Services (AWS)",
+        location: "Austin, TX",
+        workMode: "Hybrid",
+        domain: "devops",
+        salary: "$185,000 - $250,000",
+        minExp: 6,
+        requiredDegree: "Bachelor's in IT / Computer Science",
+        skills: ["aws", "kubernetes", "docker", "terraform", "ci/cd", "linux", "prometheus", "ansible", "system design", "python", "golang"],
+        description: "Join the AWS Core Infrastructure team to architect multi-region Kubernetes clusters, automated Terraform GitOps pipelines, and enterprise-grade observability systems with 99.999% SLA targets."
+      },
+      {
+        id: "job_4",
+        title: "Staff Cyber Security Engineer",
+        company: "CrowdStrike",
+        location: "Washington, DC",
+        workMode: "Remote",
+        domain: "security",
+        salary: "$175,000 - $235,000",
+        minExp: 5,
+        requiredDegree: "Bachelor's in Cybersecurity / CS",
+        skills: ["cyber security", "penetration testing", "siem", "splunk", "soc2", "incident response", "aws", "linux", "python", "zero trust"],
+        description: "Lead threat hunting, vulnerability management, and cloud security architecture. Conduct high-impact penetration tests, defend cloud environments against APT actors, and maintain SOC2 compliance."
+      },
+      {
+        id: "job_5",
+        title: "Lead Technical Product Manager",
+        company: "Google Cloud",
+        location: "Seattle, WA",
+        workMode: "Hybrid",
+        domain: "product",
+        salary: "$190,000 - $255,000",
+        minExp: 5,
+        requiredDegree: "MBA or B.S. in Computer Science",
+        skills: ["product management", "agile", "system design", "rest api", "sql", "a/b testing", "kpi tracking", "roadmapping", "user stories"],
+        description: "Drive product roadmap, GTM execution, and developer platform features for Google Cloud AI services. Collaborate closely with engineering and data science leaders to define next-generation developer tooling."
+      },
+      {
+        id: "job_6",
+        title: "Computer Vision Research Engineer",
+        company: "Tesla Autopilot",
+        location: "Palo Alto, CA",
+        workMode: "On-site",
+        domain: "ai",
+        salary: "$180,000 - $250,000",
+        minExp: 3,
+        requiredDegree: "Master's or PhD in CS / Robotics",
+        skills: ["python", "c++", "pytorch", "computer vision", "deep learning", "opencv", "linux", "docker", "cuda"],
+        description: "Design neural network architectures for real-time video perception, object detection, and spatial understanding running onboard Tesla autonomous vehicles."
+      },
+      {
+        id: "job_7",
+        title: "Backend Distributed Systems Engineer",
+        company: "Datadog",
+        location: "Boston, MA",
+        workMode: "Remote",
+        domain: "software",
+        salary: "$165,000 - $220,000",
+        minExp: 4,
+        requiredDegree: "Bachelor's in Computer Science",
+        skills: ["golang", "python", "kafka", "redis", "postgresql", "kubernetes", "docker", "system design", "prometheus", "rest api"],
+        description: "Build ultra-high throughput event processing engines in Go and Kafka handling over 50 trillion metrics per day. Optimize latency and distributed storage backends."
+      },
+      {
+        id: "job_8",
+        title: "Senior React & Frontend Engineer",
+        company: "Airbnb",
+        location: "San Francisco, CA",
+        workMode: "Remote",
+        domain: "software",
+        salary: "$160,000 - $215,000",
+        minExp: 4,
+        requiredDegree: "Bachelor's in CS or equivalent",
+        skills: ["react", "typescript", "javascript", "tailwind css", "next.js", "html5", "css3", "graphql", "rest api", "git"],
+        description: "Craft immersive, highly performant web experiences for millions of travelers worldwide. Champion web accessibility, design systems, and frontend state management."
+      },
+      {
+        id: "job_9",
+        title: "Data Platform & MLOps Engineer",
+        company: "Spotify",
+        location: "New York, NY",
+        workMode: "Hybrid",
+        domain: "ai",
+        salary: "$170,000 - $230,000",
+        minExp: 4,
+        requiredDegree: "Bachelor's in CS / Data",
+        skills: ["python", "mlops", "kubernetes", "docker", "aws", "scikit-learn", "pandas", "sql", "snowflake", "kafka"],
+        description: "Power music recommendations at scale. Build automated training and deployment pipelines for Spotify's recommendation and audio personalization models."
+      },
+      {
+        id: "job_10",
+        title: "Junior React / Frontend Developer",
+        company: "Vercel Partner Agency",
+        location: "Chicago, IL",
+        workMode: "Remote",
+        domain: "software",
+        salary: "$75,000 - $95,000",
+        minExp: 1,
+        requiredDegree: "Associate's or Bachelor's",
+        skills: ["javascript", "react", "html5", "css3", "tailwind css", "git", "rest api"],
+        description: "Great entry role! Join a fast-paced digital consultancy building responsive landing pages and web applications with React, Tailwind CSS, and Next.js."
+      },
+      {
+        id: "job_11",
+        title: "Site Reliability Engineer (SRE)",
+        company: "Netflix",
+        location: "Los Gatos, CA",
+        workMode: "Remote",
+        domain: "devops",
+        salary: "$195,000 - $270,000",
+        minExp: 5,
+        requiredDegree: "Bachelor's in CS / Engineering",
+        skills: ["aws", "linux", "python", "golang", "kubernetes", "docker", "prometheus", "ci/cd", "system design", "terraform"],
+        description: "Maintain the global streaming reliability of Netflix. Design chaos engineering experiments, automated failover systems, and cloud infrastructure telemetry."
+      },
+      {
+        id: "job_12",
+        title: "Application Security Specialist",
+        company: "Palantir Technologies",
+        location: "Denver, CO",
+        workMode: "On-site",
+        domain: "security",
+        salary: "$165,000 - $225,000",
+        minExp: 3,
+        requiredDegree: "Bachelor's in Cybersecurity / CS",
+        skills: ["cyber security", "penetration testing", "zero trust", "python", "linux", "soc2", "docker", "aws", "rest api"],
+        description: "Protect sensitive government and enterprise analytical platforms. Perform secure code audits, penetration testing, and identity federation integrations."
+      }
+    ];
+
+    // =========================================================================
+    // 4. CLIENT-SIDE NLP & RESUME PARSING ALGORITHMS
+    // =========================================================================
+
+    // Tokenizer & Stopword filter
+    const STOPWORDS = new Set([
+      "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
+      "any", "are", "aren't", "as", "at", "be", "because", "been", "before", "being",
+      "below", "between", "both", "but", "by", "can", "can't", "cannot", "could",
+      "couldn't", "did", "didn't", "do", "does", "doesn't", "doing", "don't", "down",
+      "during", "each", "few", "for", "from", "further", "had", "hadn't", "has",
+      "hasn't", "have", "haven't", "having", "he", "her", "here", "hers", "herself",
+      "him", "himself", "his", "how", "i", "if", "in", "into", "is", "isn't", "it",
+      "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself",
+      "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought",
+      "our", "ours", "ourselves", "out", "over", "own", "same", "shan't", "she",
+      "should", "shouldn't", "so", "some", "such", "than", "that", "the", "their",
+      "theirs", "them", "themselves", "then", "there", "these", "they", "this",
+      "those", "through", "to", "too", "under", "until", "up", "very", "was", "wasn't",
+      "we", "were", "weren't", "what", "when", "where", "which", "while", "who",
+      "whom", "why", "with", "won't", "would", "wouldn't", "you", "your", "yours",
+      "yourself", "yourselves", "with", "within", "without", "per", "via", "across"
+    ]);
+
+    function tokenizeText(text) {
+      if (!text) return [];
+      const clean = text.toLowerCase().replace(/[^a-z0-9+#.\s]/g, " ");
+      return clean.split(/\s+/).filter(w => w.length > 1 && !STOPWORDS.has(w));
+    }
+
+    // TF-IDF and Cosine Similarity
+    function calculateCosineSimilarity(docA, docB) {
+      const tokensA = tokenizeText(docA);
+      const tokensB = tokenizeText(docB);
+
+      if (tokensA.length === 0 || tokensB.length === 0) return 0;
+
+      const freqA = {};
+      const freqB = {};
+      const vocabulary = new Set();
+
+      tokensA.forEach(t => { freqA[t] = (freqA[t] || 0) + 1; vocabulary.add(t); });
+      tokensB.forEach(t => { freqB[t] = (freqB[t] || 0) + 1; vocabulary.add(t); });
+
+      let dotProduct = 0;
+      let magA = 0;
+      let magB = 0;
+
+      vocabulary.forEach(token => {
+        const vA = freqA[token] || 0;
+        const vB = freqB[token] || 0;
+        dotProduct += vA * vB;
+      });
+
+      Object.values(freqA).forEach(v => { magA += v * v; });
+      Object.values(freqB).forEach(v => { magB += v * v; });
+
+      if (magA === 0 || magB === 0) return 0;
+      return dotProduct / (Math.sqrt(magA) * Math.sqrt(magB));
+    }
+
+    // Extract Skills from Text using Taxonomy
+    function extractSkills(text) {
+      if (!text) return [];
+      const lower = text.toLowerCase();
+      const detected = new Set();
+
+      for (const [canonicalSkill, aliases] of Object.entries(SKILL_TAXONOMY)) {
+        // Test canonical name
+        const canonRegex = new RegExp(`\\b${canonicalSkill.replace('+', '\\+')}\\b`, 'i');
+        if (canonRegex.test(lower)) {
+          detected.add(canonicalSkill);
+          continue;
+        }
+        // Test aliases
+        for (const alias of aliases) {
+          const aliasRegex = new RegExp(`\\b${alias.replace('+', '\\+')}\\b`, 'i');
+          if (aliasRegex.test(lower)) {
+            detected.add(canonicalSkill);
+            break;
+          }
+        }
+      }
+
+      return Array.from(detected);
+    }
+
+    // Heuristic Entity Extractor
+    function parseResumeEntities(rawText) {
+      const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      
+      // 1. Name detection (first non-empty line usually)
+      let name = lines.length > 0 ? lines[0].replace(/[|•,].*$/, '').trim() : "Candidate";
+      if (name.length > 35) name = "Candidate Profile";
+
+      // 2. Email detection
+      const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      const email = emailMatch ? emailMatch[0] : "candidate@example.com";
+
+      // 3. Phone detection
+      const phoneMatch = rawText.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+      const phone = phoneMatch ? phoneMatch[0] : "+1 (555) 019-2834";
+
+      // 4. Location detection
+      const locMatch = rawText.match(/([A-Z][a-zA-Z\s]+,\s*[A-Z]{2})/);
+      const location = locMatch ? locMatch[0] : "San Francisco, CA";
+
+      // 5. Experience Years estimation
+      let expYears = 3.0;
+      const yearMatches = rawText.match(/(\d{1,2}(?:\.\d+)?)\s*(?:\+|plus)?\s*(?:years?|yrs?)/i);
+      if (yearMatches) {
+        expYears = parseFloat(yearMatches[1]);
+      } else {
+        // Count date ranges e.g. 2019 - 2023
+        const dateRangeMatches = rawText.match(/20\d{2}\s*[-–to]+\s*(?:20\d{2}|present|current)/gi);
+        if (dateRangeMatches) {
+          expYears = Math.min(15, Math.max(1, dateRangeMatches.length * 2.2));
+        }
+      }
+
+      // 6. Education detection
+      let education = "B.S. in Computer Science";
+      let eduDetails = "Relevant coursework in Software Systems";
+      if (/ph\.?d/i.test(rawText)) {
+        education = "Ph.D. in Computer Science / AI";
+        eduDetails = "Doctoral Dissertation in Computational Systems";
+      } else if (/master|m\.s\.|msc|mba/i.test(rawText)) {
+        education = "M.S. in Computer Science / Engineering";
+        eduDetails = "Graduate Specialization in Intelligent Systems";
+      } else if (/bachelor|b\.s\.|bsc|b\.tech|b\.e\./i.test(rawText)) {
+        education = "B.S. in Computer Science";
+        eduDetails = "Honors in Computer Engineering & Mathematics";
+      }
+
+      // 7. Extract Skills
+      const extractedSkills = extractSkills(rawText);
+
+      return {
+        name,
+        email,
+        phone,
+        location,
+        experienceYears: Math.round(expYears * 10) / 10,
+        education,
+        eduDetails,
+        skills: extractedSkills,
+        rawText
+      };
+    }
+
+    // =========================================================================
+    // 5. ATS AUDIT EVALUATOR
+    // =========================================================================
+    function evaluateATSAudit(resumeData) {
+      const text = resumeData.rawText;
+      const lower = text.toLowerCase();
+
+      // 1. Quantifiable Impact Score
+      const numberMatches = text.match(/\b(?:\d+%(?:\s+increase|\s+reduction|\s+growth)?|\$\d+[\d,.]*(?:k|m|b)?|\d+\+?\s+(?:users|requests|million|clients|engineers))\b/gi) || [];
+      const metricRatio = Math.min(1, numberMatches.length / 5);
+      const metricScore = Math.round(55 + metricRatio * 43);
+
+      // 2. Action Verbs Score
+      let verbCount = 0;
+      ACTION_VERBS.forEach(v => {
+        if (lower.includes(v)) verbCount++;
+      });
+      const verbRatio = Math.min(1, verbCount / 6);
+      const verbScore = Math.round(50 + verbRatio * 46);
+
+      // 3. Formatting & Section Completeness
+      let formatPoints = 40;
+      if (resumeData.email) formatPoints += 15;
+      if (resumeData.phone) formatPoints += 15;
+      if (resumeData.skills.length >= 6) formatPoints += 15;
+      if (/experience|work history|employment/i.test(text)) formatPoints += 10;
+      if (/education|degree|university/i.test(text)) formatPoints += 5;
+      const formatScore = Math.min(100, formatPoints);
+
+      // 4. Readability & Keyword distribution
+      const words = text.split(/\s+/).length;
+      let readScore = 88;
+      if (words < 150) readScore = 55;
+      else if (words > 1200) readScore = 72; // too long
+
+      // Total Composite ATS Score
+      const totalATS = Math.round((metricScore * 0.3) + (verbScore * 0.3) + (formatScore * 0.25) + (readScore * 0.15));
+
+      // Generate Actionable Suggestions
+      const suggestions = [];
+      if (metricScore < 85) {
+        suggestions.push({
+          type: "metric",
+          badge: "Quantify Impact",
+          color: "amber",
+          text: "Add more measurable results (e.g. 'reduced latency by 35%', 'managed $1.2M budget', 'scaled to 5M users')."
+        });
+      } else {
+        suggestions.push({
+          type: "metric_good",
+          badge: "Strong Metrics",
+          color: "emerald",
+          text: `Found ${numberMatches.length} quantifiable achievements with clear ROI outcomes.`
+        });
+      }
+
+      if (verbScore < 80) {
+        suggestions.push({
+          type: "verb",
+          badge: "Action Verbs",
+          color: "amber",
+          text: "Start bullet points with high-impact action verbs like 'Architected', 'Spearheaded', 'Optimized', and 'Accelerated'."
+        });
+      }
+
+      if (resumeData.skills.length < 8) {
+        suggestions.push({
+          type: "skills",
+          badge: "Keyword Density",
+          color: "rose",
+          text: "Include a dedicated 'Core Skills' section categorized by Languages, Frameworks, and Cloud Tools for ATS parsers."
+        });
+      }
+
+      suggestions.push({
+        type: "ats_tip",
+        badge: "Format Safe",
+        color: "indigo",
+        text: "Clean single-column standard layout detected. Clean standard fonts and bullet points parse with 99% ATS reliability."
+      });
+
+      return {
+        totalATS,
+        metricScore,
+        verbScore,
+        formatScore,
+        readScore,
+        suggestions
+      };
+    }
+
+    // =========================================================================
+    // 6. GLOBAL STATE MANAGEMENT
+    // =========================================================================
+    let currentCandidate = PRESET_CANDIDATES["ml_engineer"];
+    let currentParsedData = parseResumeEntities(currentCandidate.rawText);
+    let currentTargetJob = JOBS_DATABASE[0];
+    let recruiterCandidatesList = [
+      parseResumeEntities(PRESET_CANDIDATES["ml_engineer"].rawText),
+      parseResumeEntities(PRESET_CANDIDATES["fullstack_dev"].rawText),
+      parseResumeEntities(PRESET_CANDIDATES["devops_architect"].rawText),
+      parseResumeEntities(PRESET_CANDIDATES["product_mgr"].rawText),
+      parseResumeEntities(PRESET_CANDIDATES["cyber_security"].rawText),
+      parseResumeEntities(PRESET_CANDIDATES["junior_frontend"].rawText)
+    ];
+
+    // =========================================================================
+    // 7. INITIALIZATION & TAB SWITCHING
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('resumeText').value = currentCandidate.rawText;
+      document.getElementById('jobDescText').value = currentTargetJob.description;
+      updateCharCount();
+      renderAllViews();
+    });
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'font-semibold', 'shadow-sm');
+        btn.classList.add('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800');
+      });
+
+      const activeSection = document.getElementById(tabId);
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeSection) activeSection.classList.remove('hidden');
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400', 'hover:text-slate-200', 'hover:bg-slate-800');
+        activeBtn.classList.add('bg-indigo-600', 'text-white', 'font-semibold', 'shadow-sm');
+      }
+
+      if (tabId === 'match-tab') {
+        drawRadarChart();
+      }
+    }
+
+    function loadPresetCandidate(presetKey) {
+      const cand = PRESET_CANDIDATES[presetKey];
+      if (!cand) return;
+      currentCandidate = cand;
+      document.getElementById('resumeText').value = cand.rawText;
+      updateCharCount();
+      parseAndDisplayResume();
+    }
+
+    function loadTargetJob(jobId) {
+      if (jobId === 'custom') {
+        document.getElementById('jobDescText').focus();
+        return;
+      }
+      const job = JOBS_DATABASE.find(j => j.id === jobId);
+      if (!job) return;
+      currentTargetJob = job;
+      document.getElementById('jobDescText').value = job.description;
+      calculateMatch();
+    }
+
+    function clearResumeText() {
+      document.getElementById('resumeText').value = "";
+      updateCharCount();
+    }
+
+    function updateCharCount() {
+      const val = document.getElementById('resumeText').value;
+      const chars = val.length;
+      const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+      document.getElementById('charCount').innerText = `${chars} characters | ${words} words`;
+    }
+
+    document.getElementById('resumeText').addEventListener('input', updateCharCount);
+
+    // =========================================================================
+    // 8. PARSING & DISPLAYING CANDIDATE DATA
+    // =========================================================================
+    function parseAndDisplayResume() {
+      const text = document.getElementById('resumeText').value;
+      if (!text.trim()) {
+        alert("Please paste or upload resume text first.");
+        return;
+      }
+
+      currentParsedData = parseResumeEntities(text);
+      const ats = evaluateATSAudit(currentParsedData);
+
+      // Top Quick Stats
+      document.getElementById('quickSkillCount').innerText = currentParsedData.skills.length;
+      document.getElementById('quickAtsScore').innerText = `${ats.totalATS}/100`;
+      document.getElementById('quickExpLevel').innerText = currentParsedData.experienceYears >= 5 ? `Senior (${currentParsedData.experienceYears} Yrs)` : `${currentParsedData.experienceYears} Yrs Exp`;
+
+      // Candidate Header
+      document.getElementById('candName').innerText = currentParsedData.name;
+      document.getElementById('candEmail').querySelector('span').innerText = currentParsedData.email;
+      document.getElementById('candPhone').querySelector('span').innerText = currentParsedData.phone;
+      document.getElementById('candLocation').querySelector('span').innerText = currentParsedData.location;
+      document.getElementById('candExpPill').innerText = `${currentParsedData.experienceYears} Yrs Exp`;
+      document.getElementById('candEducation').innerText = currentParsedData.education;
+      document.getElementById('candEduDetails').innerText = currentParsedData.eduDetails;
+
+      // Render Skills Badges
+      const skillsContainer = document.getElementById('skillsContainer');
+      skillsContainer.innerHTML = "";
+      document.getElementById('skillBadgeCount').innerText = `${currentParsedData.skills.length} Extracted`;
+
+      if (currentParsedData.skills.length === 0) {
+        skillsContainer.innerHTML = `<span class="text-xs text-slate-500 italic">No standard technical skills detected. Try pasting a technical resume.</span>`;
+      } else {
+        currentParsedData.skills.forEach(skill => {
+          const badge = document.createElement('span');
+          badge.className = "text-xs bg-slate-900 border border-slate-700 text-indigo-300 px-2.5 py-1 rounded-lg font-medium shadow-sm flex items-center space-x-1";
+          badge.innerHTML = `<span>${skill}</span>`;
+          skillsContainer.appendChild(badge);
+        });
+      }
+
+      // Render ATS Scores
+      document.getElementById('atsScoreRadial').innerText = `${ats.totalATS}%`;
+      document.getElementById('metricScoreText').innerText = `${ats.metricScore}%`;
+      document.getElementById('metricScoreBar').style.width = `${ats.metricScore}%`;
+      document.getElementById('verbScoreText').innerText = `${ats.verbScore}%`;
+      document.getElementById('verbScoreBar').style.width = `${ats.verbScore}%`;
+      document.getElementById('formatScoreText').innerText = `${ats.formatScore}%`;
+      document.getElementById('formatScoreBar').style.width = `${ats.formatScore}%`;
+      document.getElementById('readabilityScoreText').innerText = `${ats.readScore}%`;
+      document.getElementById('readabilityScoreBar').style.width = `${ats.readScore}%`;
+
+      // Render ATS Suggestions
+      const suggContainer = document.getElementById('atsSuggestionsList');
+      suggContainer.innerHTML = "";
+      ats.suggestions.forEach(s => {
+        const item = document.createElement('div');
+        const colorClasses = s.color === 'emerald' ? 'bg-emerald-950/30 border-emerald-500/30 text-emerald-300' :
+                             s.color === 'rose' ? 'bg-rose-950/30 border-rose-500/30 text-rose-300' :
+                             s.color === 'amber' ? 'bg-amber-950/30 border-amber-500/30 text-amber-300' :
+                             'bg-indigo-950/30 border-indigo-500/30 text-indigo-300';
+        item.className = `flex items-start space-x-2.5 p-2.5 rounded-xl border text-xs ${colorClasses}`;
+        item.innerHTML = `
+          <span class="font-bold uppercase tracking-wider text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-current">${s.badge}</span>
+          <span class="text-slate-200">${s.text}</span>
+        `;
+        suggContainer.appendChild(item);
+      });
+
+      // Recalculate Job Match and Recommendations
+      calculateMatch();
+      renderJobRecommendations();
+      generateInterviewQuestions();
+    }
+
+    // =========================================================================
+    // 9. JOB MATCH ENGINE & SKILL GAP CALCULATION
+    // =========================================================================
+    function calculateMatch() {
+      const resumeText = document.getElementById('resumeText').value;
+      const jdText = document.getElementById('jobDescText').value;
+
+      if (!resumeText || !jdText) return;
+
+      // 1. NLP TF-IDF Cosine Similarity
+      const nlpCosine = calculateCosineSimilarity(resumeText, jdText);
+      const nlpScorePct = Math.round(Math.min(99, Math.max(20, nlpCosine * 120)));
+
+      // 2. Skill Overlap & Gap Matrix
+      const resumeSkills = new Set(currentParsedData.skills);
+      const jdSkills = extractSkills(jdText);
+      
+      const matched = [];
+      const missing = [];
+
+      jdSkills.forEach(s => {
+        if (resumeSkills.has(s)) {
+          matched.push(s);
+        } else {
+          missing.push(s);
+        }
+      });
+
+      const skillCoveragePct = jdSkills.length > 0 ? Math.round((matched.length / jdSkills.length) * 100) : 80;
+
+      // 3. Experience Fit Score
+      let expFitPct = 90;
+      const targetMinExp = currentTargetJob.minExp || 4;
+      if (currentParsedData.experienceYears >= targetMinExp) {
+        expFitPct = 95;
+      } else {
+        const gap = targetMinExp - currentParsedData.experienceYears;
+        expFitPct = Math.max(40, Math.round(95 - gap * 20));
+      }
+
+      // 4. Overall Weighted Score
+      const overallScore = Math.round((skillCoveragePct * 0.45) + (nlpScorePct * 0.35) + (expFitPct * 0.20));
+
+      // UI Updates
+      document.getElementById('overallMatchNumber').innerText = `${overallScore}%`;
+      const tierBadge = document.getElementById('matchTierBadge');
+      if (overallScore >= 85) {
+        tierBadge.innerText = "Strong Match";
+        tierBadge.className = "text-[9px] uppercase font-bold text-emerald-400";
+      } else if (overallScore >= 70) {
+        tierBadge.innerText = "Good Fit";
+        tierBadge.className = "text-[9px] uppercase font-bold text-indigo-400";
+      } else {
+        tierBadge.innerText = "Needs Upskilling";
+        tierBadge.className = "text-[9px] uppercase font-bold text-amber-400";
+      }
+
+      // Update Circular Progress
+      const circle = document.getElementById('overallCircle');
+      const circumference = 2 * Math.PI * 38; // 238.76
+      const offset = circumference - (overallScore / 100) * circumference;
+      circle.style.strokeDashoffset = offset;
+
+      // Update Sub-scores
+      document.getElementById('nlpScoreText').innerText = `${nlpScorePct}%`;
+      document.getElementById('nlpScoreBar').style.width = `${nlpScorePct}%`;
+
+      document.getElementById('skillOverlapText').innerText = `${skillCoveragePct}%`;
+      document.getElementById('skillOverlapBar').style.width = `${skillCoveragePct}%`;
+      document.getElementById('skillFractionText').innerText = `${matched.length} of ${jdSkills.length || matched.length} core JD skills matched.`;
+
+      document.getElementById('expFitText').innerText = `${expFitPct}%`;
+      document.getElementById('expFitBar').style.width = `${expFitPct}%`;
+      document.getElementById('expFitDetails').innerText = `Candidate has ${currentParsedData.experienceYears} yrs exp; JD requires ${targetMinExp}+ yrs.`;
+
+      // Render Skill Gap Lists
+      document.getElementById('matchedCount').innerText = matched.length;
+      document.getElementById('missingCount').innerText = missing.length;
+
+      const matchedList = document.getElementById('matchedSkillsList');
+      matchedList.innerHTML = "";
+      if (matched.length === 0) {
+        matchedList.innerHTML = `<span class="text-xs text-slate-500 italic">No exact skill keywords aligned with JD.</span>`;
+      } else {
+        matched.forEach(s => {
+          const badge = document.createElement('span');
+          badge.className = "text-xs bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1";
+          badge.innerHTML = `<span>✓</span><span>${s}</span>`;
+          matchedList.appendChild(badge);
+        });
+      }
+
+      const missingList = document.getElementById('missingSkillsList');
+      missingList.innerHTML = "";
+      if (missing.length === 0) {
+        missingList.innerHTML = `<span class="text-xs text-emerald-400 italic">🎉 Outstanding! You have 100% skill coverage for this job.</span>`;
+      } else {
+        missing.forEach(s => {
+          const badge = document.createElement('span');
+          badge.className = "text-xs bg-rose-950/40 border border-rose-500/40 text-rose-300 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1";
+          badge.innerHTML = `<span>+</span><span>${s}</span>`;
+          missingList.appendChild(badge);
+        });
+      }
+
+      // Targeted Advice
+      const adviceContainer = document.getElementById('jobSpecificAdvice');
+      adviceContainer.innerHTML = `
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5">
+          <p class="font-semibold text-slate-200">1. Strategic Keyword Placement:</p>
+          <p class="text-slate-400">Incorporate missing keywords <strong class="text-rose-300">${missing.slice(0, 3).join(', ') || 'specialized tools'}</strong> into your bullet points or certifications section.</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1.5">
+          <p class="font-semibold text-slate-200">2. Highlight Target Metrics:</p>
+          <p class="text-slate-400">Emphasize past experience with high-concurrency systems, distributed latency reductions, and team leadership.</p>
+        </div>
+      `;
+
+      drawRadarChart();
+    }
+
+    // =========================================================================
+    // 10. RADAR SPIDER CHART RENDERING (CANVAS)
+    // =========================================================================
+    function drawRadarChart() {
+      const canvas = document.getElementById('radarCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = 95;
+
+      ctx.clearRect(0, 0, width, height);
+
+      const domains = [
+        { name: "Languages", cand: 92, target: 85 },
+        { name: "Frameworks", cand: 88, target: 90 },
+        { name: "Cloud/DevOps", cand: 80, target: 75 },
+        { name: "Databases", cand: 85, target: 80 },
+        { name: "System Design", cand: 90, target: 95 },
+        { name: "Soft Skills", cand: 82, target: 70 }
+      ];
+
+      const numSides = domains.length;
+      const angleStep = (2 * Math.PI) / numSides;
+
+      // Draw Background Polygon Webs
+      for (let level = 1; level <= 4; level++) {
+        const r = (radius / 4) * level;
+        ctx.beginPath();
+        for (let i = 0; i < numSides; i++) {
+          const angle = i * angleStep - Math.PI / 2;
+          const x = centerX + r * Math.cos(angle);
+          const y = centerY + r * Math.sin(angle);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = "rgba(71, 85, 105, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw Axis Lines & Text Labels
+      ctx.font = "10px sans-serif";
+      ctx.fillStyle = "#94a3b8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      for (let i = 0; i < numSides; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle);
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = "rgba(71, 85, 105, 0.5)";
+        ctx.stroke();
+
+        // Label Position
+        const labelR = radius + 22;
+        const lx = centerX + labelR * Math.cos(angle);
+        const ly = centerY + labelR * Math.sin(angle);
+        ctx.fillText(domains[i].name, lx, ly);
+      }
+
+      // Draw Target JD Polygon (Purple)
+      ctx.beginPath();
+      for (let i = 0; i < numSides; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        const val = domains[i].target / 100;
+        const x = centerX + (radius * val) * Math.cos(angle);
+        const y = centerY + (radius * val) * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "rgba(168, 85, 247, 0.2)";
+      ctx.fill();
+      ctx.strokeStyle = "#a855f7";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw Candidate Polygon (Indigo)
+      ctx.beginPath();
+      for (let i = 0; i < numSides; i++) {
+        const angle = i * angleStep - Math.PI / 2;
+        const val = domains[i].cand / 100;
+        const x = centerX + (radius * val) * Math.cos(angle);
+        const y = centerY + (radius * val) * Math.sin(angle);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = "rgba(99, 102, 241, 0.35)";
+      ctx.fill();
+      ctx.strokeStyle = "#6366f1";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    // =========================================================================
+    // 11. JOB RECOMMENDATIONS ENGINE
+    // =========================================================================
+    function renderJobRecommendations() {
+      const container = document.getElementById('jobCardsGrid');
+      if (!container) return;
+      container.innerHTML = "";
+
+      const resumeText = document.getElementById('resumeText').value;
+      const resumeSkills = new Set(currentParsedData.skills);
+
+      // Score each job against candidate
+      const scoredJobs = JOBS_DATABASE.map(job => {
+        const nlp = calculateCosineSimilarity(resumeText, job.description);
+        const matchedSkills = job.skills.filter(s => resumeSkills.has(s));
+        const skillScore = Math.round((matchedSkills.length / job.skills.length) * 100);
+        
+        let expScore = 90;
+        if (currentParsedData.experienceYears >= job.minExp) expScore = 95;
+        else expScore = Math.max(40, 95 - (job.minExp - currentParsedData.experienceYears) * 20);
+
+        const composite = Math.round((skillScore * 0.5) + (nlp * 100 * 0.3) + (expScore * 0.2));
+        const finalScore = Math.min(99, Math.max(30, composite));
+
+        return {
+          ...job,
+          finalScore,
+          matchedSkills,
+          missingSkills: job.skills.filter(s => !resumeSkills.has(s))
+        };
+      });
+
+      // Sort by highest score first
+      scoredJobs.sort((a, b) => b.finalScore - a.finalScore);
+
+      // Store in memory for filtering
+      window._scoredJobs = scoredJobs;
+      filterJobs();
+    }
+
+    function filterJobs() {
+      const container = document.getElementById('jobCardsGrid');
+      const domainVal = document.getElementById('filterDomain').value;
+      const tierVal = document.getElementById('filterMatchTier').value;
+      const modeVal = document.getElementById('filterWorkMode').value;
+
+      let filtered = (window._scoredJobs || []);
+
+      if (domainVal !== 'all') {
+        filtered = filtered.filter(j => j.domain === domainVal);
+      }
+      if (tierVal !== 'all') {
+        const minScore = parseInt(tierVal, 10);
+        filtered = filtered.filter(j => j.finalScore >= minScore);
+      }
+      if (modeVal !== 'all') {
+        filtered = filtered.filter(j => j.workMode.toLowerCase().includes(modeVal.toLowerCase()));
+      }
+
+      container.innerHTML = "";
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="col-span-3 text-center py-10 text-slate-400 bg-slate-800/40 rounded-2xl border border-slate-700">No job openings found matching the selected filters.</div>`;
+        return;
+      }
+
+      filtered.forEach(job => {
+        const badgeColor = job.finalScore >= 85 ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                           job.finalScore >= 70 ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' :
+                           'bg-amber-500/20 text-amber-300 border-amber-500/30';
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-800/80 border border-slate-700 hover:border-indigo-500/60 rounded-2xl p-5 shadow-lg flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 group";
+        card.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[10px] uppercase font-bold text-slate-400">${job.company}</span>
+                <h3 class="text-sm font-bold text-white group-hover:text-indigo-400 transition">${job.title}</h3>
+              </div>
+              <span class="text-xs px-2.5 py-1 rounded-full font-bold border ${badgeColor}">
+                ${job.finalScore}% Match
+              </span>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+              <span class="flex items-center space-x-1">
+                <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                <span>${job.location}</span>
+              </span>
+              <span>•</span>
+              <span class="text-indigo-300">${job.workMode}</span>
+              <span>•</span>
+              <span class="text-emerald-400 font-medium">${job.salary}</span>
+            </div>
+
+            <p class="text-xs text-slate-400 line-clamp-2">${job.description}</p>
+
+            <div class="space-y-1.5 pt-1">
+              <div class="text-[10px] text-slate-500 font-semibold uppercase">Key Skills Matched:</div>
+              <div class="flex flex-wrap gap-1">
+                ${job.matchedSkills.slice(0, 4).map(s => `<span class="text-[10px] bg-emerald-950/40 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded">✓ ${s}</span>`).join('')}
+                ${job.missingSkills.length > 0 ? `<span class="text-[10px] bg-rose-950/40 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded">+${job.missingSkills.length} to learn</span>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-700/60 flex items-center justify-between">
+            <button onclick="openJobDetailsModal('${job.id}')" class="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center space-x-1">
+              <span>View ATS Tips</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+            </button>
+            <button onclick="applyForJobModal('${job.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow transition">
+              Quick Apply
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // =========================================================================
+    // 12. RECRUITER BATCH SCREENING ENGINE
+    // =========================================================================
+    function runRecruiterBatchScreening() {
+      const jobId = document.getElementById('recruiterJobSelect').value;
+      const targetJob = JOBS_DATABASE.find(j => j.id === jobId) || JOBS_DATABASE[0];
+      const tableBody = document.getElementById('recruiterTableBody');
+      tableBody.innerHTML = "";
+
+      // Rank all candidates in pipeline against selected job
+      const ranked = recruiterCandidatesList.map(cand => {
+        const nlp = calculateCosineSimilarity(cand.rawText, targetJob.description);
+        const candSkills = new Set(cand.skills);
+        const matched = targetJob.skills.filter(s => candSkills.has(s));
+        const skillScore = Math.round((matched.length / targetJob.skills.length) * 100);
+
+        let expScore = 90;
+        if (cand.experienceYears >= targetJob.minExp) expScore = 95;
+        else expScore = Math.max(30, 95 - (targetJob.minExp - cand.experienceYears) * 20);
+
+        const composite = Math.round((skillScore * 0.5) + (nlp * 100 * 0.3) + (expScore * 0.2));
+        const finalScore = Math.min(99, Math.max(30, composite));
+
+        return {
+          ...cand,
+          finalScore,
+          matchedSkills: matched,
+          missingSkills: targetJob.skills.filter(s => !candSkills.has(s))
+        };
+      });
+
+      ranked.sort((a, b) => b.finalScore - a.finalScore);
+
+      ranked.forEach((cand, idx) => {
+        const row = document.createElement('tr');
+        row.className = "hover:bg-slate-800/60 transition";
+
+        const rankBadge = idx === 0 ? `<span class="w-6 h-6 rounded-full bg-amber-500/20 text-amber-300 font-bold flex items-center justify-center border border-amber-500/40">🥇 1</span>` :
+                          idx === 1 ? `<span class="w-6 h-6 rounded-full bg-slate-400/20 text-slate-300 font-bold flex items-center justify-center border border-slate-400/40">🥈 2</span>` :
+                          idx === 2 ? `<span class="w-6 h-6 rounded-full bg-orange-700/20 text-orange-400 font-bold flex items-center justify-center border border-orange-700/40">🥉 3</span>` :
+                          `<span class="text-slate-500 font-mono pl-2">#${idx + 1}</span>`;
+
+        const scoreColor = cand.finalScore >= 85 ? 'text-emerald-400' :
+                           cand.finalScore >= 70 ? 'text-indigo-400' :
+                           'text-amber-400';
+
+        const statusOptions = cand.finalScore >= 85 ?
+          `<select class="bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 rounded px-2 py-1 text-[11px] font-semibold">
+            <option selected>🟢 Shortlisted</option>
+            <option>Schedule Interview</option>
+            <option>Reject</option>
+          </select>` :
+          cand.finalScore >= 70 ?
+          `<select class="bg-indigo-950/60 border border-indigo-500/40 text-indigo-300 rounded px-2 py-1 text-[11px] font-semibold">
+            <option selected>🔵 Review Later</option>
+            <option>Shortlist</option>
+            <option>Reject</option>
+          </select>` :
+          `<select class="bg-rose-950/60 border border-rose-500/40 text-rose-300 rounded px-2 py-1 text-[11px] font-semibold">
+            <option selected>🔴 Rejected (Under-qualified)</option>
+            <option>Re-evaluate</option>
+          </select>`;
+
+        row.innerHTML = `
+          <td class="py-3 px-4">${rankBadge}</td>
+          <td class="py-3 px-4">
+            <div class="font-bold text-white text-xs">${cand.name}</div>
+            <div class="text-[10px] text-slate-400">${cand.email} • ${cand.location}</div>
+          </td>
+          <td class="py-3 px-4 text-center font-bold text-sm ${scoreColor}">${cand.finalScore}%</td>
+          <td class="py-3 px-4 text-center text-slate-300">${cand.matchedSkills.length} / ${targetJob.skills.length}</td>
+          <td class="py-3 px-4 text-center text-slate-300">${cand.experienceYears} Yrs</td>
+          <td class="py-3 px-4 text-center text-[11px] text-slate-400 truncate max-w-[140px]">${cand.education}</td>
+          <td class="py-3 px-4 text-center">${statusOptions}</td>
+          <td class="py-3 px-4 text-right">
+            <button onclick="loadCandidateToMainView('${cand.name}')" class="text-xs bg-slate-900 hover:bg-slate-700 text-indigo-300 px-2.5 py-1 rounded border border-slate-700 transition">
+              Inspect
+            </button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    function loadCandidateToMainView(candName) {
+      const found = recruiterCandidatesList.find(c => c.name === candName);
+      if (!found) return;
+      document.getElementById('resumeText').value = found.rawText;
+      updateCharCount();
+      switchTab('screen-tab');
+      parseAndDisplayResume();
+    }
+
+    function exportRecruiterCSV() {
+      let csv = "Rank,Candidate Name,Email,Overall Fit Score,Skills Matched,Years Experience,Education\n";
+      const rows = document.querySelectorAll('#recruiterTableBody tr');
+      rows.forEach((r, idx) => {
+        const cells = r.querySelectorAll('td');
+        if (cells.length >= 6) {
+          const name = cells[1].querySelector('.font-bold').innerText;
+          const email = cells[1].querySelector('.text-slate-400').innerText;
+          const score = cells[2].innerText;
+          const skills = cells[3].innerText;
+          const exp = cells[4].innerText;
+          const edu = cells[5].innerText;
+          csv += `"${idx+1}","${name}","${email}","${score}","${skills}","${exp}","${edu}"\n`;
+        }
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'ResuMatch_Candidate_Screening_Report.csv');
+      a.click();
+    }
+
+    // =========================================================================
+    // 13. AI INTERVIEW QUESTION GENERATOR
+    // =========================================================================
+    function generateInterviewQuestions() {
+      const techList = document.getElementById('techQuestionsList');
+      const gapList = document.getElementById('gapQuestionsList');
+      const behavList = document.getElementById('behavioralQuestionsList');
+
+      if (!techList || !gapList || !behavList) return;
+
+      const skills = currentParsedData.skills;
+      const sampleSkill1 = skills[0] || "Python";
+      const sampleSkill2 = skills[1] || "Distributed Systems";
+      const sampleSkill3 = skills[2] || "Cloud Architecture";
+
+      techList.innerHTML = `
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-slate-200">Q: Deep Dive into ${sampleSkill1.toUpperCase()}:</p>
+          <p class="text-slate-400">Can you walk us through how you architected production pipelines in ${sampleSkill1}? What was the hardest latency or concurrency bottleneck you resolved?</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-slate-200">Q: Production Scaling with ${sampleSkill2.toUpperCase()}:</p>
+          <p class="text-slate-400">How did you ensure fault-tolerance, data consistency, and observability when scaling ${sampleSkill2} to high throughput?</p>
+        </div>
+      `;
+
+      gapList.innerHTML = `
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-amber-300">Q: Fast Adaptation Strategy:</p>
+          <p class="text-slate-400">Our team relies heavily on specialized distributed frameworks. Tell us about a time you had to master an unfamiliar technology within 2 weeks for a production deadline.</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-amber-300">Q: Trade-off Evaluation:</p>
+          <p class="text-slate-400">When choosing between rapid prototyping vs long-term architectural maintainability, how do you defend your technical decision to product stakeholders?</p>
+        </div>
+      `;
+
+      behavList.innerHTML = `
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-indigo-300">Q: Conflict & Technical Disagreement (STAR):</p>
+          <p class="text-slate-400">Describe a situation where an engineering peer strongly disagreed with your system design proposal. How did you resolve the conflict and maintain velocity?</p>
+        </div>
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60 space-y-1">
+          <p class="font-semibold text-indigo-300">Q: High-Severity Outage Response:</p>
+          <p class="text-slate-400">Tell us about the most critical production incident you handled. How did you triage root cause, communicate with leadership, and prevent future recurrence?</p>
+        </div>
+      `;
+    }
+
+    // =========================================================================
+    // 14. FILE UPLOADS & DRAG AND DROP
+    // =========================================================================
+    function handleDragOver(e) {
+      e.preventDefault();
+      document.getElementById('dropZone').classList.add('border-indigo-500', 'bg-slate-800');
+    }
+    function handleDragLeave(e) {
+      e.preventDefault();
+      document.getElementById('dropZone').classList.remove('border-indigo-500', 'bg-slate-800');
+    }
+    function handleFileDrop(e) {
+      e.preventDefault();
+      handleDragLeave(e);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        readFile(e.dataTransfer.files[0]);
+      }
+    }
+    function handleFileSelect(e) {
+      if (e.target.files && e.target.files[0]) {
+        readFile(e.target.files[0]);
+      }
+    }
+
+    function readFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const content = evt.target.result;
+        // Simple plain text extractor
+        document.getElementById('resumeText').value = content;
+        updateCharCount();
+        parseAndDisplayResume();
+      };
+      reader.readAsText(file);
+    }
+
+    // =========================================================================
+    // 15. MODALS & INTERACTIONS
+    // =========================================================================
+    function openJobDetailsModal(jobId) {
+      const job = JOBS_DATABASE.find(j => j.id === jobId);
+      if (!job) return;
+
+      document.getElementById('modalJobTitle').innerText = job.title;
+      document.getElementById('modalJobCompany').innerText = `${job.company} • ${job.location} (${job.workMode})`;
+      document.getElementById('modalJobSalary').innerText = job.salary;
+      document.getElementById('modalJobExp').innerText = `${job.minExp}+ Years`;
+      document.getElementById('modalJobDesc').innerText = job.description;
+
+      const tipsList = document.getElementById('modalJobTipsList');
+      tipsList.innerHTML = `
+        <li>Highlight direct experience with <strong>${job.skills.slice(0, 3).join(', ')}</strong> in your topmost summary.</li>
+        <li>Emphasize measurable outcomes: e.g. latency reductions, scale handled, or dollar impact.</li>
+        <li>Ensure your title alignment resonates with <strong>${job.title}</strong> keywords.</li>
+      `;
+
+      const modal = document.getElementById('jobDetailsModalEl');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function applyForJobModal(jobId) {
+      openJobDetailsModal(jobId);
+    }
+
+    function applyForJob() {
+      alert("Application submitted successfully with your AI-tailored resume!");
+      closeModal('jobDetailsModalEl');
+    }
+
+    function addCandidateModal() {
+      const modal = document.getElementById('addCandidateModalEl');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function saveNewCandidate() {
+      const name = document.getElementById('newCandName').value.trim() || "New Candidate";
+      const email = document.getElementById('newCandEmail').value.trim() || "candidate@email.com";
+      const resumeText = document.getElementById('newCandResume').value.trim();
+
+      if (!resumeText) {
+        alert("Please paste resume text.");
+        return;
+      }
+
+      const parsed = parseResumeEntities(resumeText);
+      parsed.name = name;
+      parsed.email = email;
+
+      recruiterCandidatesList.unshift(parsed);
+      document.getElementById('batchCandidatesCount').innerText = `${recruiterCandidatesList.length} Resumes in Pipeline`;
+      runRecruiterBatchScreening();
+      closeModal('addCandidateModalEl');
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }
+    }
+
+    function runGlobalAnalysis() {
+      const icon = document.getElementById('globalScanIcon');
+      const spinner = document.getElementById('globalSpinner');
+
+      icon.classList.add('hidden');
+      spinner.classList.remove('hidden');
+
+      setTimeout(() => {
+        spinner.classList.add('hidden');
+        icon.classList.remove('hidden');
+        parseAndDisplayResume();
+        runRecruiterBatchScreening();
+      }, 500);
+    }
+
+    function renderAllViews() {
+      parseAndDisplayResume();
+      runRecruiterBatchScreening();
+    }
+  </script>
+</body>
+</html>
