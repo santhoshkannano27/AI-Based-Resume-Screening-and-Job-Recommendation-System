@@ -177,3 +177,6 @@ statistics, tensorflow
 
 This project is provided as-is for educational and portfolio purposes.
 Feel free to modify and reuse it.
+
+##prototype video
+https://youtu.be/P0iD803gUao?si=2aL6I8qdQGxdHCe6
